@@ -1,5 +1,14 @@
 <div align="center">
 
+# 与原版差别
+增强简历编辑器字段样式与自定义功能
+- 为基本字段添加样式设置对话框，支持图标、字体大小、单行显示等配置
+- 实现自定义字段的标签编辑与独立样式控制
+- 在预览组件中支持字段级别的样式渲染与日期格式化
+- 为自定义模块添加标题行字段编辑器与复制功能
+- 增加全局设置选项控制字段换行行为
+- 更新国际化文案支持新增的样式设置相关翻译
+
 # ✨ Magic Resume ✨
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -11,6 +20,7 @@
 </div>
 
 Magic Resume 是一个现代化的在线简历编辑器，让创建专业简历变得简单有趣。基于 Next.js 和 Motion 构建，支持实时预览和自定义主题。
+
 
 ## 📸 项目截图
 
