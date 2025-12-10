@@ -13,6 +13,8 @@ const config = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Enable standalone output for the Docker image build.
+  output: "standalone",
   // output: "export",
 };
 

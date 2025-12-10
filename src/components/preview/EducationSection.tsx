@@ -4,6 +4,7 @@ import { Education, GlobalSettings } from "@/types/resume";
 import SectionTitle from "./SectionTitle";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useLocale } from "next-intl";
+import { cn } from "@/lib/utils";
 
 interface EducationSectionProps {
   education?: Education[];
@@ -19,6 +20,10 @@ const EducationSection = ({
   const { setActiveSection } = useResumeStore();
   const locale = useLocale();
   const visibleEducation = education?.filter((edu) => edu.visible);
+  const allowWrap = globalSettings?.wrapFields;
+  const formatHtml = (value?: string) => ({
+    __html: (value || "").replace(/\n/g, "<br />"),
+  });
   return (
     <motion.div
       className="
@@ -57,23 +62,42 @@ const EducationSection = ({
               } gap-2 items-center justify-items-start [&>*:last-child]:justify-self-end`}
             >
               <div
-                className="font-bold"
+                className={cn(
+                  "font-bold",
+                  allowWrap
+                    ? "whitespace-pre-line break-words"
+                    : "truncate"
+                )}
                 style={{
                   fontSize: `${globalSettings?.subheaderSize || 16}px`,
                 }}
-              >
-                <span>{edu.school}</span>
-              </div>
+                dangerouslySetInnerHTML={formatHtml(edu.school)}
+              />
 
               {globalSettings?.centerSubtitle && (
-                <motion.div layout="position" className="text-subtitleFont">
-                  {[edu.major, edu.degree].filter(Boolean).join(" · ")}
-                  {edu.gpa && ` · GPA ${edu.gpa}`}
-                </motion.div>
+                <motion.div
+                  layout="position"
+                  className={cn(
+                    "text-subtitleFont",
+                    allowWrap
+                      ? "whitespace-pre-line break-words"
+                      : "truncate"
+                  )}
+                  dangerouslySetInnerHTML={formatHtml(
+                    `${[edu.major, edu.degree]
+                      .filter(Boolean)
+                      .join(" · ")}${edu.gpa ? ` · GPA ${edu.gpa}` : ""}`
+                  )}
+                />
               )}
 
               <span
-                className="text-subtitleFont shrink-0"
+                className={cn(
+                  "text-subtitleFont",
+                  allowWrap
+                    ? "whitespace-pre-line break-words"
+                    : "shrink-0 truncate"
+                )}
                 suppressHydrationWarning
               >
                 {`${new Date(edu.startDate).toLocaleDateString(
@@ -83,10 +107,20 @@ const EducationSection = ({
             </motion.div>
 
             {!globalSettings?.centerSubtitle && (
-              <motion.div layout="position" className="text-subtitleFont mt-1">
-                {[edu.major, edu.degree].filter(Boolean).join(" · ")}
-                {edu.gpa && ` · GPA ${edu.gpa}`}
-              </motion.div>
+              <motion.div
+                layout="position"
+                className={cn(
+                  "text-subtitleFont mt-1",
+                  allowWrap
+                    ? "whitespace-pre-line break-words"
+                    : "truncate"
+                )}
+                dangerouslySetInnerHTML={formatHtml(
+                  `${[edu.major, edu.degree]
+                    .filter(Boolean)
+                    .join(" · ")}${edu.gpa ? ` · GPA ${edu.gpa}` : ""}`
+                )}
+              />
             )}
 
             {edu.description && (

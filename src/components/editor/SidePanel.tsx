@@ -384,6 +384,23 @@ export function SidePanel() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-600 dark:text-neutral-300">
+                  {t("typography.wrapFields.title")}
+                </Label>
+                <Switch
+                  checked={globalSettings?.wrapFields ?? false}
+                  onCheckedChange={(checked) =>
+                    updateGlobalSettings?.({ wrapFields: checked })
+                  }
+                />
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t("typography.wrapFields.desc")}
+              </p>
+            </div>
           </div>
         </SettingCard>
 

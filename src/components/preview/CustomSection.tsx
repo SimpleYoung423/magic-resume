@@ -1,8 +1,14 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
 import SectionTitle from "./SectionTitle";
-import { GlobalSettings, CustomItem } from "@/types/resume";
+import {
+  GlobalSettings,
+  CustomItem,
+  CustomHeaderField,
+} from "@/types/resume";
 import { useResumeStore } from "@/store/useResumeStore";
+import { cn } from "@/lib/utils";
+import * as Icons from "lucide-react";
 
 interface CustomSectionProps {
   sectionId: string;
@@ -21,11 +27,48 @@ const CustomSection = ({
 }: CustomSectionProps) => {
   const { setActiveSection } = useResumeStore();
   const visibleItems = items?.filter((item) => {
-    return item.visible && (item.title || item.description);
+    const hasHeader =
+      item.headerFields?.some((f) => Boolean(f.value)) || item.title;
+    return item.visible && (hasHeader || item.description);
   });
 
   const centerSubtitle = globalSettings?.centerSubtitle;
-  const gridColumns = centerSubtitle ? 3 : 2;
+  const allowWrap = globalSettings?.wrapFields;
+  const formatHtml = (value?: string) => ({
+    __html: (value || "").replace(/\n/g, "<br />"),
+  });
+
+  const buildHeaderFields = (item: CustomItem): CustomHeaderField[] => {
+    if (item.headerFields?.length) return item.headerFields;
+    const defaults: CustomHeaderField[] = [
+      {
+        id: "title",
+        label: "",
+        value: item.title,
+        align: "left",
+        bold: true,
+        fontSize: globalSettings?.subheaderSize || 16,
+      },
+      {
+        id: "subtitle",
+        label: "",
+        value: item.subtitle,
+        align: centerSubtitle ? "center" : "left",
+        bold: false,
+        fontSize: globalSettings?.baseFontSize || 14,
+      },
+      {
+        id: "dateRange",
+        label: "",
+        value: item.dateRange,
+        align: "right",
+        bold: false,
+        fontSize: globalSettings?.baseFontSize || 14,
+      },
+    ];
+
+    return defaults.filter((field) => field.value);
+  };
 
   return (
     <motion.div
@@ -54,28 +97,46 @@ const CustomSection = ({
           >
             <motion.div
               layout="position"
-              className={`grid grid-cols-${gridColumns} gap-2 items-center justify-items-start [&>*:last-child]:justify-self-end`}
+              className="grid auto-cols-[minmax(160px,1fr)] grid-flow-col gap-3 items-center overflow-x-auto"
             >
-              <div className="flex items-center gap-2">
-                <h4
-                  className="font-bold"
+              {buildHeaderFields(item)
+                .filter((field) => field.visible !== false)
+                .map((field) => (
+                <div
+                  key={field.id}
+                  className={cn(
+                    "flex items-center gap-1",
+                    field.align === "center" && "justify-center",
+                    field.align === "right" && "justify-end",
+                    allowWrap ? "whitespace-normal break-words" : "truncate"
+                  )}
                   style={{
-                    fontSize: `${globalSettings?.subheaderSize || 16}px`,
+                    fontSize: `${field.fontSize || globalSettings?.baseFontSize || 14}px`,
+                    fontWeight: field.bold ? 700 : 400,
                   }}
                 >
-                  {item.title}
-                </h4>
-              </div>
-
-              {centerSubtitle && (
-                <motion.div layout="position" className="text-subtitleFont">
-                  {item.subtitle}
-                </motion.div>
-              )}
-
-              <span className="text-subtitleFont shrink-0">
-                {item.dateRange}
-              </span>
+                  {field.showIcon && field.icon && (
+                    (() => {
+                      const IconComp =
+                        Icons[field.icon as keyof typeof Icons];
+                      return IconComp ? (
+                        <IconComp className="w-4 h-4 shrink-0" />
+                      ) : null;
+                    })()
+                  )}
+                  {field.label && (
+                    <span className="text-subtitleFont">{field.label}</span>
+                  )}
+                  <span
+                    className={cn(
+                      allowWrap
+                        ? "whitespace-pre-line break-words"
+                        : "truncate"
+                    )}
+                    dangerouslySetInnerHTML={formatHtml(field.value)}
+                  />
+                </div>
+              ))}
             </motion.div>
 
             {!centerSubtitle && item.subtitle && (

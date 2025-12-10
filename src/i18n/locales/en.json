@@ -290,7 +290,17 @@
       "title": "Profile",
       "avatar": "Avatar",
       "basicField": "Basic",
+      "addBasicField": "Add Basic Field",
       "customField": "Custom",
+      "style": "Style",
+      "styleSettings": "Field Style",
+      "showIcons": "Show icons",
+      "fontSize": "Font size",
+      "singleLine": "Single line",
+      "bold": "Bold",
+      "dateFormat": "Birth date format",
+      "dateFormatYM": "Year/Month",
+      "dateFormatYMD": "Year/Month/Day",
       "layout": "Align",
       "customFields": {
         "placeholders": {

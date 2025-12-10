@@ -46,11 +46,18 @@ export const getBorderRadiusValue = (config?: PhotoConfig) => {
 
 export interface BasicFieldType {
   id: string;
-  key: keyof BasicInfo;
+  key: string;
   label: string;
   type?: "date" | "textarea" | "text" | "editor";
   visible: boolean;
   custom?: boolean;
+  style?: {
+    showIcon?: boolean;
+    fontSize?: number;
+    singleLine?: boolean;
+    bold?: boolean;
+    dateFormat?: "YM" | "YMD";
+  };
 }
 
 export interface CustomFieldType {
@@ -78,6 +85,10 @@ export interface BasicInfo {
   githubUseName: string;
   githubContributionsVisible: boolean;
   layout?: "left" | "center" | "right";
+  basicFontSize?: number;
+  showIcons?: boolean;
+  singleLineFields?: boolean;
+  [key: string]: unknown;
 }
 
 export interface Education {
@@ -144,6 +155,19 @@ export interface CustomItem {
   dateRange: string;
   description: string;
   visible: boolean;
+  headerFields?: CustomHeaderField[];
+}
+
+export interface CustomHeaderField {
+  id: string;
+  label: string;
+  value: string;
+  align?: "left" | "center" | "right";
+  fontSize?: number;
+  bold?: boolean;
+  icon?: string;
+  showIcon?: boolean;
+  visible?: boolean;
 }
 
 export const THEME_COLORS = [

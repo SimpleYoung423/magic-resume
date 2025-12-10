@@ -1,11 +1,31 @@
 "use client";
-import React, { useState } from "react";
-import { PlusCircle, GripVertical, Trash2, Eye, EyeOff } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import {
+  PlusCircle,
+  GripVertical,
+  Trash2,
+  Eye,
+  EyeOff,
+  SlidersHorizontal,
+} from "lucide-react";
 import { Reorder, AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import PhotoUpload from "@/components/shared/PhotoSelector";
 import IconSelector from "../IconSelector";
 import AlignSelector from "./AlignSelector";
@@ -139,7 +159,10 @@ const CustomField: React.FC<CustomFieldProps> = ({
 
 const BasicPanel: React.FC = () => {
   const { activeResume, updateBasicInfo } = useResumeStore();
-  const { basic } = activeResume || {};
+  const { basic, globalSettings } = activeResume || {};
+  const [styleModalField, setStyleModalField] = useState<BasicFieldType | null>(
+    null
+  );
   const [customFields, setCustomFields] = useState<CustomFieldType[]>(
     basic?.customFields?.map((field) => ({
       ...field,
@@ -192,6 +215,63 @@ const BasicPanel: React.FC = () => {
       fieldOrder: updatedFields,
     });
   };
+
+  const addBasicField = () => {
+    const id = generateUUID();
+    const newField: BasicFieldType = {
+      id,
+      key: `custom_basic_${id}`,
+      label: t("customFields.placeholders.label"),
+      type: "text",
+      visible: true,
+      custom: true,
+    };
+    const updatedFields = [...basicFields, newField];
+    setBasicFields(updatedFields);
+    updateBasicInfo({
+      ...basic,
+      fieldOrder: updatedFields,
+      [newField.key]: "",
+    });
+  };
+
+  const updateBasicFieldMeta = (
+    fieldId: string,
+    payload: Partial<BasicFieldType>
+  ) => {
+    const updatedFields = basicFields.map((field) =>
+      field.id === fieldId ? { ...field, ...payload } : field
+    );
+    setBasicFields(updatedFields);
+    updateBasicInfo({
+      ...basic,
+      fieldOrder: updatedFields,
+    });
+  };
+
+  const updateBasicFieldStyle = (
+    fieldId: string,
+    style: Partial<NonNullable<BasicFieldType["style"]>>
+  ) => {
+    const updatedFields = basicFields.map((field) =>
+      field.id === fieldId
+        ? { ...field, style: { ...(field.style || {}), ...style } }
+        : field
+    );
+    setBasicFields(updatedFields);
+    updateBasicInfo({
+      ...basic,
+      fieldOrder: updatedFields,
+    });
+  };
+
+  const activeStyleField = useMemo(() => {
+    if (!styleModalField) return null;
+    return (
+      basicFields.find((field) => field.id === styleModalField.id) ||
+      styleModalField
+    );
+  }, [basicFields, styleModalField]);
 
   const addCustomField = () => {
     const fieldToAdd: CustomFieldType = {
@@ -286,8 +366,24 @@ const BasicPanel: React.FC = () => {
                 }}
               />
             )}
-            <div className=" w-[80px] ml-[4px] text-sm font-medium text-neutral-700 dark:text-neutral-200">
-              {t(`basicFields.${field.key}`)}
+            <div
+              className={cn(
+                "ml-[4px] text-sm font-medium text-neutral-700 dark:text-neutral-200",
+                field.custom ? "w-[130px]" : "w-[80px]"
+              )}
+            >
+              {field.custom ? (
+                <Input
+                  value={field.label}
+                  onChange={(e) =>
+                    updateBasicFieldMeta(field.id, { label: e.target.value })
+                  }
+                  placeholder={t("customFields.placeholders.label")}
+                  className="h-9"
+                />
+              ) : (
+                t(`basicFields.${field.key}`)
+              )}
             </div>
             <div className="flex-1">
               <Field
@@ -299,7 +395,11 @@ const BasicPanel: React.FC = () => {
                     [field.key]: value,
                   })
                 }
-                placeholder={`请输入${field.label}`}
+                placeholder={
+                  field.custom
+                    ? t("customFields.placeholders.value")
+                    : `请输入${field.label}`
+                }
                 type={field.type}
               />
             </div>
@@ -321,6 +421,19 @@ const BasicPanel: React.FC = () => {
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "shrink-0 h-8 px-2",
+                "text-neutral-500 dark:text-neutral-400",
+                "hover:text-neutral-700 dark:hover:text-neutral-200"
+              )}
+              onClick={() => setStyleModalField(field)}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
             </Button>
 
             {field.key !== "name" && field.key !== "title" && (
@@ -392,7 +505,17 @@ const BasicPanel: React.FC = () => {
                       {basicFields.map((field) => renderBasicField(field))}
                     </Reorder.Group>
                   </AnimatePresence>
-                </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                <Button onClick={addBasicField} className="w-full mt-4">
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  {t("addBasicField")}
+                </Button>
+              </motion.div>
+            </motion.div>
 
                 <motion.div className="space-y-3">
                   <motion.h3 className="font-medium text-neutral-900 dark:text-neutral-200 px-1">
@@ -428,6 +551,120 @@ const BasicPanel: React.FC = () => {
                     </Button>
                   </motion.div>
                 </motion.div>
+                <Dialog
+                  open={!!activeStyleField}
+                  onOpenChange={(open) => {
+                    if (!open) setStyleModalField(null);
+                  }}
+                >
+                  <DialogContent className="sm:max-w-[420px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("styleSettings")}</DialogTitle>
+                    </DialogHeader>
+                    {activeStyleField && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span>{t("showIcons")}</span>
+                          <Switch
+                            checked={
+                              activeStyleField.style?.showIcon ??
+                              basic?.showIcons ??
+                              globalSettings?.useIconMode ??
+                              false
+                            }
+                            onCheckedChange={(checked) =>
+                              updateBasicFieldStyle(activeStyleField.id, {
+                                showIcon: checked,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span>{t("singleLine")}</span>
+                          <Switch
+                            checked={
+                              activeStyleField.style?.singleLine ??
+                              basic?.singleLineFields ??
+                              false
+                            }
+                            onCheckedChange={(checked) =>
+                              updateBasicFieldStyle(activeStyleField.id, {
+                                singleLine: checked,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span>{t("bold")}</span>
+                          <Switch
+                            checked={activeStyleField.style?.bold ?? false}
+                            onCheckedChange={(checked) =>
+                              updateBasicFieldStyle(activeStyleField.id, {
+                                bold: checked,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{t("fontSize")}</span>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={10}
+                              max={32}
+                              value={
+                                activeStyleField.style?.fontSize ??
+                                basic?.basicFontSize ??
+                                globalSettings?.baseFontSize ??
+                                14
+                              }
+                              onChange={(e) =>
+                                updateBasicFieldStyle(activeStyleField.id, {
+                                  fontSize: Number(e.target.value) || 14,
+                                })
+                              }
+                              className="w-20 h-9"
+                            />
+                            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                              px
+                            </span>
+                          </div>
+                        </div>
+
+                        {activeStyleField.key === "birthDate" && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{t("dateFormat")}</span>
+                            <Select
+                              value={
+                                activeStyleField.style?.dateFormat || "YM"
+                              }
+                              onValueChange={(value: "YM" | "YMD") =>
+                                updateBasicFieldStyle(activeStyleField.id, {
+                                  dateFormat: value,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-32 h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="YM">
+                                  {t("dateFormatYM")}
+                                </SelectItem>
+                                <SelectItem value="YMD">
+                                  {t("dateFormatYMD")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
                 <motion.div className="space-y-3">
                   <motion.div
                     initial={{ opacity: 0 }}

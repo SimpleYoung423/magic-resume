@@ -50,6 +50,7 @@ interface ResumeStore {
   updateCustomData: (sectionId: string, items: CustomItem[]) => void;
   removeCustomData: (sectionId: string) => void;
   addCustomItem: (sectionId: string) => void;
+  duplicateCustomItem: (sectionId: string, itemId: string) => void;
   updateCustomItem: (
     sectionId: string,
     itemId: string,
@@ -518,6 +519,48 @@ export const useResumeStore = create(
           };
           get().updateResume(activeResumeId, { customData: updatedCustomData });
         }
+      },
+
+      duplicateCustomItem: (sectionId, itemId) => {
+        const { activeResumeId, resumes } = get();
+        if (!activeResumeId) return;
+        const currentResume = resumes[activeResumeId];
+        const items = currentResume.customData[sectionId] || [];
+        const index = items.findIndex((item) => item.id === itemId);
+        if (index === -1) return;
+
+        const source = items[index];
+        const primary =
+          source.headerFields?.[0]?.value || source.title || "未命名模块";
+        const clonedTitle = `${primary} (复制)`;
+        const clone: CustomItem = {
+          ...source,
+          id: generateUUID(),
+          headerFields: source.headerFields?.map((field, idx) => ({
+            ...field,
+            id: generateUUID(),
+            value:
+              idx === 0
+                ? clonedTitle
+                : field.value,
+          })),
+          title:
+            source.headerFields && source.headerFields.length > 0
+              ? clonedTitle
+              : source.title,
+          subtitle: source.subtitle,
+          dateRange: source.dateRange,
+          description: source.description,
+          visible: source.visible ?? true,
+        };
+
+        const newItems = [
+          ...items.slice(0, index + 1),
+          clone,
+          ...items.slice(index + 1),
+        ];
+
+        get().updateCustomData(sectionId, newItems);
       },
 
       updateCustomItem: (sectionId, itemId, updates) => {

@@ -26,7 +26,11 @@ const BaseInfo = ({
   const t = useTranslations("workbench");
   const locale = useLocale();
   const { setActiveSection } = useResumeStore();
-  const useIconMode = globalSettings?.useIconMode ?? false;
+  const useIconMode =
+    basic.showIcons ?? globalSettings?.useIconMode ?? false;
+  const basicFontSize =
+    basic?.basicFontSize ?? globalSettings?.baseFontSize ?? 14;
+  const singleLine = basic?.singleLineFields ?? false;
   const layout = basic?.layout || "left";
 
   const getIcon = (iconName: string | undefined) => {
@@ -64,16 +68,21 @@ const BaseInfo = ({
       .map((field) => ({
         key: field.key,
         value:
-          field.key === "birthDate" && basic[field.key]
+          field.type === "date" && basic[field.key]
             ? new Date(basic[field.key] as string).toLocaleDateString(locale)
             : (basic[field.key] as string),
         icon: basic.icons?.[field.key] || "User",
         label: field.label,
         visible: field.visible,
         custom: field.custom,
+        showIcon: field.style?.showIcon,
+        fontSize: field.style?.fontSize,
+        singleLine: field.style?.singleLine,
+        bold: field.style?.bold,
+        dateFormat: field.style?.dateFormat,
       }))
       .filter((item) => Boolean(item.value));
-  }, [basic]);
+  }, [basic, locale]);
 
   const allFields = [
     ...getOrderedFields,
@@ -220,43 +229,80 @@ const BaseInfo = ({
       layout="position"
       className={fieldsContainerClass}
       style={{
-        fontSize: `${globalSettings?.baseFontSize || 14}px`,
+        fontSize: `${basicFontSize}px`,
         color: isModernTemplate ? "#fff" : "rgb(75, 85, 99)",
         maxWidth: layout === "center" ? "none" : "600px",
       }}
     >
-      {allFields.map((item) => (
-        <motion.div
-          key={item.key}
-          className={cn(baseFieldItemClass, isModernTemplate && "text-[#fff]")}
-          style={{
-            width: isModernTemplate ? "100%" : "",
-          }}
-        >
-          {useIconMode ? (
-            <div className="flex items-center gap-1">
-              {getIcon(item.icon)}
-              {item.key === "email" ? (
-                <a href={`mailto:${item.value}`} className="underline">
-                  {item.value}
-                </a>
-              ) : (
-                <span>{item.value}</span>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 overflow-hidden">
-              {!item.custom && (
-                <span>{t(`basicPanel.basicFields.${item.key}`)}:</span>
-              )}
-              {item.custom && <span>{item.label}:</span>}
-              <span className="truncate" suppressHydrationWarning>
-                {item.value}
-              </span>
-            </div>
-          )}
-        </motion.div>
-      ))}
+      {allFields.map((item) => {
+        const fieldShowIcon = item.showIcon ?? useIconMode;
+        const fieldFontSize = item.fontSize ?? basicFontSize;
+        const fieldSingleLine = item.singleLine ?? singleLine;
+        const fieldBold = item.bold ?? false;
+        const dateFormat = item.dateFormat || "YM";
+
+        const renderDate = (value: string) => {
+          if (!value) return "";
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return value;
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const d = String(date.getDate()).padStart(2, "0");
+          return dateFormat === "YMD" ? `${y}/${m}/${d}` : `${y}/${m}`;
+        };
+
+        const displayValue =
+          item.key === "birthDate" ? renderDate(item.value as string) : item.value;
+
+        return (
+          <motion.div
+            key={item.key}
+            className={cn(
+              baseFieldItemClass,
+              isModernTemplate && "text-[#fff]",
+              fieldSingleLine && "whitespace-nowrap",
+              fieldSingleLine && layout !== "center" && "col-span-2 w-full",
+              fieldSingleLine && layout === "center" && "w-full"
+            )}
+            style={{
+              width: isModernTemplate ? "100%" : "",
+              fontSize: `${fieldFontSize}px`,
+              fontWeight: fieldBold ? 700 : 400,
+            }}
+          >
+            {fieldShowIcon ? (
+              <div className="flex items-center gap-1">
+                {getIcon(item.icon)}
+                {item.key === "email" ? (
+                  <a href={`mailto:${displayValue}`} className="underline">
+                    {displayValue}
+                  </a>
+                ) : (
+                  <span className={fieldSingleLine ? "truncate" : ""}>
+                    {displayValue}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 overflow-hidden">
+                {!item.custom && (
+                  <span>
+                    {t(`basicPanel.basicFields.${item.key}`)}
+                    {t(`basicPanel.basicFields.${item.key}`) ? "：" : ""}
+                  </span>
+                )}
+                {item.custom && item.label && <span>{item.label}：</span>}
+                <span
+                  className={cn(fieldSingleLine ? "truncate" : "truncate")}
+                  suppressHydrationWarning
+                >
+                  {displayValue}
+                </span>
+              </div>
+            )}
+          </motion.div>
+        );
+      })}
     </motion.div>
   );
 
